@@ -1,16 +1,3 @@
-required_packages <- c("shiny", "bslib", "plotly", "DT", "readxl", "jsonlite")
-missing_packages <- required_packages[
-  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
-]
-
-if (length(missing_packages) > 0) {
-  stop(
-    "Please install the required packages before running this app: ",
-    paste(missing_packages, collapse = ", "),
-    call. = FALSE
-  )
-}
-
 library(shiny)
 library(bslib)
 library(plotly)
