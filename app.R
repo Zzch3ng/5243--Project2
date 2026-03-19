@@ -1,3 +1,4 @@
+#Libraries
 library(shiny)
 library(bslib)
 library(plotly)
@@ -5,15 +6,21 @@ library(DT)
 library(readxl)
 library(jsonlite)
 
-# Allow large classroom datasets such as HMDA extracts.
+# ---- 1. Global Configuration ----
+
+# Allow large datasets 
 options(shiny.maxRequestSize = 300 * 1024^2)
 
-app_title <- "Project 2 - Interactive Data Wrangling Studio"
+app_title <- "Interactive Data Wrangling Studio"
+
+# ---- Data Loading Helpers ----
 
 load_builtin_dataset <- function(name) {
   switch(
-    tolower(name %||% "iris"),
+    tolower(name %||% "test1"),
+    "test2" = mtcars,
     "mtcars" = mtcars,
+    "test3" = ToothGrowth,
     "toothgrowth" = ToothGrowth,
     iris
   )
@@ -43,6 +50,8 @@ make_unique_name <- function(name, existing) {
   }
   candidate
 }
+
+# ---- 2.Data Cleaning Helpers ----
 
 mode_value <- function(x) {
   x <- x[!is.na(x)]
@@ -105,6 +114,7 @@ read_uploaded_data <- function(path, original_name) {
   stop("Unsupported file format. Please upload a CSV, Excel, JSON, or RDS file.")
 }
 
+# Standardize text fields and column names before later cleaning steps.
 standardize_strings <- function(df) {
   df <- as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
   names(df) <- make.unique(clean_column_name(names(df)), sep = "_")
@@ -136,6 +146,7 @@ standardize_strings <- function(df) {
   df
 }
 
+# Apply row deletion or simple imputations for missing values.
 apply_missing_handling <- function(df, strategy, numeric_strategy, categorical_strategy) {
   if (identical(strategy, "keep")) {
     return(df)
@@ -188,6 +199,7 @@ apply_missing_handling <- function(df, strategy, numeric_strategy, categorical_s
   df
 }
 
+# Run the full cleaning stage selected by the user.
 apply_cleaning <- function(
   df,
   standardize_text,
@@ -218,6 +230,8 @@ apply_cleaning <- function(
   rownames(cleaned) <- NULL
   cleaned
 }
+
+# ---- 3.Preprocessing Helpers ----
 
 apply_outlier_handling <- function(df, method, target_columns) {
   if (identical(method, "none") || nrow(df) == 0) {
@@ -296,6 +310,7 @@ scale_numeric_columns <- function(df, method, target_columns) {
   df
 }
 
+# Encode selected categorical columns as numeric labels or one-hot columns.
 encode_categorical_columns <- function(df, method, target_columns) {
   if (identical(method, "none") || nrow(df) == 0) {
     return(df)
@@ -362,6 +377,8 @@ apply_preprocessing <- function(
   processed
 }
 
+# ---- 3.Feature Engineering Helpers ----
+
 apply_feature_recipes <- function(df, recipes) {
   if (length(recipes) == 0 || nrow(df) == 0) {
     return(df)
@@ -409,6 +426,8 @@ apply_feature_recipes <- function(df, recipes) {
 
   df
 }
+
+# ----4. Display and Reporting Helpers ----
 
 data_overview <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
@@ -524,6 +543,8 @@ first_or_default <- function(x, default = character(0)) {
   }
 }
 
+# ---- 5.User Interface ----
+# total UI section 
 ui <- navbarPage(
   title = app_title,
   id = "main_tabs",
@@ -556,6 +577,7 @@ ui <- navbarPage(
       "))
     )
   ),
+  # Tab 1: workflow overview and rubric-oriented guidance.
   tabPanel(
     "User Guide",
     fluidRow(
@@ -601,9 +623,9 @@ ui <- navbarPage(
           class = "section-card",
           h3("Built-in datasets"),
           tags$ul(
-            tags$li("iris: flower measurements and species labels"),
-            tags$li("mtcars: vehicle performance metrics"),
-            tags$li("ToothGrowth: dosage and tooth length experiment")
+            tags$li("test1 (iris): flower measurements and species labels"),
+            tags$li("test2 (mtcars): vehicle performance metrics"),
+            tags$li("test3 (ToothGrowth): dosage and tooth length experiment")
           ),
           h3("Included functionality"),
           tags$ul(
@@ -617,6 +639,7 @@ ui <- navbarPage(
       )
     )
   ),
+  # Tab 2: file upload, built-in datasets, and raw preview.
   tabPanel(
     "Load Data",
     sidebarLayout(
@@ -630,8 +653,12 @@ ui <- navbarPage(
         selectInput(
           "builtin_dataset",
           "Built-in dataset",
-          choices = c("iris", "mtcars", "ToothGrowth"),
-          selected = "iris"
+          choices = c(
+            "test1 (iris)" = "test1",
+            "test2 (mtcars)" = "test2",
+            "test3 (ToothGrowth)" = "test3"
+          ),
+          selected = "test1"
         ),
         actionButton("load_builtin", "Load Built-in Dataset", class = "btn-primary")
       ),
@@ -645,6 +672,7 @@ ui <- navbarPage(
       )
     )
   ),
+  # Tab 3: duplicate handling, missing values, and cleaning controls.
   tabPanel(
     "Cleaning",
     sidebarLayout(
@@ -689,6 +717,7 @@ ui <- navbarPage(
       )
     )
   ),
+  # Tab 4: scaling, encoding, and outlier handling.
   tabPanel(
     "Preprocessing",
     sidebarLayout(
@@ -743,6 +772,7 @@ ui <- navbarPage(
       )
     )
   ),
+  # Tab 5: user-defined derived variables.
   tabPanel(
     "Feature Engineering",
     sidebarLayout(
@@ -779,6 +809,7 @@ ui <- navbarPage(
       )
     )
   ),
+  # Tab 6: interactive plots, summaries, and correlation analysis.
   tabPanel(
     "EDA / Visualization",
     sidebarLayout(
@@ -810,6 +841,7 @@ ui <- navbarPage(
       )
     )
   ),
+  # Tab 7: final dataset export.
   tabPanel(
     "Export / Download",
     fluidRow(
@@ -835,22 +867,34 @@ ui <- navbarPage(
   )
 )
 
+# ---- 5.Server Logic ----
+
 server <- function(input, output, session) {
-  raw_data <- reactiveVal(load_builtin_dataset("iris"))
-  source_name <- reactiveVal("Built-in dataset: iris")
-  status_message <- reactiveVal("Loaded the built-in iris dataset.")
+  # Track the current source dataset and user-facing status text.
+  raw_data <- reactiveVal(load_builtin_dataset("test1"))
+  source_name <- reactiveVal("Built-in dataset: test1 (iris)")
+  status_message <- reactiveVal("Loaded the built-in test1 (iris) dataset.")
   feature_recipes <- reactiveVal(list())
   feature_message <- reactiveVal("No engineered features yet.")
 
+  # Load one of the packaged example datasets.
   observeEvent(input$load_builtin, {
     df <- load_builtin_dataset(input$builtin_dataset)
     raw_data(df)
-    source_name(paste("Built-in dataset:", input$builtin_dataset))
-    status_message(paste("Loaded the built-in", input$builtin_dataset, "dataset successfully."))
+    display_name <- switch(
+      input$builtin_dataset,
+      "test1" = "test1 (iris)",
+      "test2" = "test2 (mtcars)",
+      "test3" = "test3 (ToothGrowth)",
+      input$builtin_dataset
+    )
+    source_name(paste("Built-in dataset:", display_name))
+    status_message(paste("Loaded the built-in", display_name, "dataset successfully."))
     feature_recipes(list())
     feature_message("Feature recipes were reset for the new dataset.")
   })
 
+  # Load a user-uploaded file and reset feature state.
   observeEvent(input$upload_file, {
     req(input$upload_file)
     info <- input$upload_file
@@ -871,6 +915,8 @@ server <- function(input, output, session) {
     )
   })
 
+  # Reactive data pipeline:
+  # raw_data -> cleaned_data -> preprocessed_data -> featured_data -> filtered_data
   cleaned_data <- reactive({
     df <- raw_data()
     req(df)
@@ -936,6 +982,7 @@ server <- function(input, output, session) {
     df[keep, , drop = FALSE]
   })
 
+  # Keep preprocessing selectors aligned with the current cleaned dataset.
   observe({
     df <- cleaned_data()
     numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
@@ -954,6 +1001,7 @@ server <- function(input, output, session) {
     updateSelectizeInput(session, "encoding_cols", choices = categorical_cols, selected = selected_encoding, server = TRUE)
   })
 
+  # Keep feature-engineering and EDA selectors aligned with the transformed dataset.
   observe({
     df <- featured_data()
     cols <- names(df)
@@ -1011,6 +1059,7 @@ server <- function(input, output, session) {
     )
   })
 
+  # Add a new feature recipe from the sidebar controls.
   observeEvent(input$add_feature, {
     df <- preprocessed_data()
     numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
@@ -1056,11 +1105,13 @@ server <- function(input, output, session) {
     feature_message(paste("Added feature", shQuote(final_name), "using the", input$feature_operation, "operation."))
   })
 
+  # Remove all saved feature recipes.
   observeEvent(input$reset_features, {
     feature_recipes(list())
     feature_message("All engineered features were removed.")
   })
 
+  # ---- 6.Load Data Outputs ----
   output$source_summary <- renderText({
     paste(
       source_name(),
@@ -1074,6 +1125,7 @@ server <- function(input, output, session) {
     preview_datatable(raw_data())
   })
 
+  # ---- 7. Cleaning Outputs ----
   output$cleaning_summary <- renderText({
     df_raw <- raw_data()
     df_clean <- cleaned_data()
@@ -1100,6 +1152,7 @@ server <- function(input, output, session) {
     preview_datatable(cleaned_data())
   })
 
+  # ---- 8. Preprocessing Outputs ----
   output$preprocessing_summary <- renderText({
     paste(
       paste("Input to preprocessing ->", data_overview(cleaned_data())),
@@ -1117,6 +1170,7 @@ server <- function(input, output, session) {
     preview_datatable(preprocessed_data())
   })
 
+  # ---- 9. Feature Engineering Outputs ----
   output$feature_summary <- renderText({
     paste(
       feature_message(),
@@ -1162,6 +1216,7 @@ server <- function(input, output, session) {
       layout(template = "plotly_white", bargap = 0.08)
   })
 
+  # ---- 10. EDA Outputs ----
   output$filter_ui <- renderUI({
     df <- featured_data()
     filter_col <- input$filter_col
@@ -1316,6 +1371,7 @@ server <- function(input, output, session) {
       layout(template = "plotly_white")
   })
 
+  # ---- Export Outputs ----
   output$export_summary <- renderText({
     paste(
       paste("Export source:", source_name()),
@@ -1339,4 +1395,5 @@ server <- function(input, output, session) {
   )
 }
 
+# ---- 11. App Entry Point ----
 shinyApp(ui = ui, server = server)
