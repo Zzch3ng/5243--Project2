@@ -14,7 +14,7 @@ In the application users can:
 - Explore the transformed data with interactive plots and summary statistics
 - Download the final processed dataset
 
-There are also some tabular datasets inside a single Shiny interface which user can work with them.
+There are also some tabular datasets inside a single Shiny interface which user can work with them。
 
 ## Main Features
 
@@ -28,11 +28,11 @@ Supported file types:
 - `.json`
 - `.rds`
 
-The app also includes built-in datasets for quick testing:
+The app also includes built-in datasets for testing（data from the r dataset which include by itself):
 
-- `test1`
-- `test2`
-- `test3`
+- `test1（iris）`
+- `test2（mtcars）`
+- `test3（ToothGrowth）`
 
 ### 2. Data Cleaning
 
