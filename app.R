@@ -1,4 +1,4 @@
-#Libraries
+
 library(shiny)
 library(bslib)
 library(plotly)
@@ -11,21 +11,42 @@ library(jsonlite)
 # Allow large datasets 
 options(shiny.maxRequestSize = 300 * 1024^2)
 
-app_title <- "Interactive Data Wrangling Studio"
+app_title <- "Data Wrangling Studio"
+# I keep the built-in datasets in one place so the dropdown labels
+# then the actual dataset loading logic stay consistent.
+builtin_datasets <- list(
+  test1 = iris,
+  test2 = mtcars,
+  test3 = ToothGrowth
+)
+builtin_dataset_labels <- c(
+  test1 = "test1 (iris)",
+  test2 = "test2 (mtcars)",
+  test3 = "test3 (ToothGrowth)"
+)
 
 # ---- Data Loading Helpers ----
 
+# This helper returns one of the built-in datasets.
+# If the input is missing or invalid, the app falls back to test1.
 load_builtin_dataset <- function(name) {
-  switch(
-    tolower(name %||% "test1"),
-    "test2" = mtcars,
-    "mtcars" = mtcars,
-    "test3" = ToothGrowth,
-    "toothgrowth" = ToothGrowth,
-    iris
-  )
+  key <- tolower(name %||% "test1")
+  if (!key %in% names(builtin_datasets)) {
+    key <- "test1"
+  }
+  builtin_datasets[[key]]
 }
 
+# This helper is only for user-facing text shown in the app.
+builtin_dataset_label <- function(name) {
+  key <- tolower(name %||% "test1")
+  if (!key %in% names(builtin_dataset_labels)) {
+    key <- "test1"
+  }
+  unname(builtin_dataset_labels[[key]])
+}
+
+# Clean column names so later preprocessing steps are easier to manage.
 clean_column_name <- function(x) {
   x <- trimws(as.character(x))
   x <- tolower(x)
@@ -38,6 +59,7 @@ clean_column_name <- function(x) {
   x
 }
 
+# If a new feature name already exists, add _2, _3, ... until it is unique.
 make_unique_name <- function(name, existing) {
   if (!(name %in% existing)) {
     return(name)
@@ -53,6 +75,7 @@ make_unique_name <- function(name, existing) {
 
 # ---- 2.Data Cleaning Helpers ----
 
+# Simple mode function used for categorical imputation.
 mode_value <- function(x) {
   x <- x[!is.na(x)]
   if (length(x) == 0) {
@@ -62,6 +85,8 @@ mode_value <- function(x) {
   unique_x[which.max(tabulate(match(x, unique_x)))]
 }
 
+# Read uploaded files based on the file extension selected by the user.
+# The goal is to support several common tabular formats in one app.
 read_uploaded_data <- function(path, original_name) {
   ext <- tolower(tools::file_ext(original_name))
 
@@ -115,6 +140,7 @@ read_uploaded_data <- function(path, original_name) {
 }
 
 # Standardize text fields and column names before later cleaning steps.
+# This makes inconsistent values like "NA", "null", and blank strings easier to handle.
 standardize_strings <- function(df) {
   df <- as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
   names(df) <- make.unique(clean_column_name(names(df)), sep = "_")
@@ -147,6 +173,8 @@ standardize_strings <- function(df) {
 }
 
 # Apply row deletion or simple imputations for missing values.
+# Numeric columns can use median/mean/zero, while categorical columns use
+# either the mode or an explicit "Missing" label.
 apply_missing_handling <- function(df, strategy, numeric_strategy, categorical_strategy) {
   if (identical(strategy, "keep")) {
     return(df)
@@ -199,7 +227,8 @@ apply_missing_handling <- function(df, strategy, numeric_strategy, categorical_s
   df
 }
 
-# Run the full cleaning stage selected by the user.
+# Run the full cleaning stage selected by the user
+# cleaning means standardizing text, handling duplicates and then resolving missing values.
 apply_cleaning <- function(
   df,
   standardize_text,
@@ -233,6 +262,7 @@ apply_cleaning <- function(
 
 # ---- 3.Preprocessing Helpers ----
 
+# Use the IQR rule to either cap extreme values or remove outlier rows.
 apply_outlier_handling <- function(df, method, target_columns) {
   if (identical(method, "none") || nrow(df) == 0) {
     return(df)
@@ -277,6 +307,7 @@ apply_outlier_handling <- function(df, method, target_columns) {
   df
 }
 
+# Apply the scaling method chosen in the UI to selected numeric columns.
 scale_numeric_columns <- function(df, method, target_columns) {
   if (identical(method, "none") || nrow(df) == 0) {
     return(df)
@@ -311,6 +342,7 @@ scale_numeric_columns <- function(df, method, target_columns) {
 }
 
 # Encode selected categorical columns as numeric labels or one-hot columns.
+# Label encoding keeps the same number of columns, while one-hot encoding expands them.
 encode_categorical_columns <- function(df, method, target_columns) {
   if (identical(method, "none") || nrow(df) == 0) {
     return(df)
@@ -361,6 +393,7 @@ encode_categorical_columns <- function(df, method, target_columns) {
   combined
 }
 
+# This helper combines all preprocessing choices into one pipeline step.
 apply_preprocessing <- function(
   df,
   outlier_method,
@@ -379,6 +412,8 @@ apply_preprocessing <- function(
 
 # ---- 3.Feature Engineering Helpers ----
 
+# Each saved recipe describes one engineered feature.
+# The app applies all saved recipes in order to the preprocessed dataset.
 apply_feature_recipes <- function(df, recipes) {
   if (length(recipes) == 0 || nrow(df) == 0) {
     return(df)
@@ -429,6 +464,7 @@ apply_feature_recipes <- function(df, recipes) {
 
 # ----4. Display and Reporting Helpers ----
 
+# Short text summary used across several tabs.
 data_overview <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
     return("No rows available.")
@@ -446,6 +482,7 @@ data_overview <- function(df) {
   )
 }
 
+# Column-level missing-value summary used in the Cleaning tab.
 build_missing_profile <- function(df) {
   if (ncol(df) == 0) {
     return(data.frame())
@@ -461,6 +498,7 @@ build_missing_profile <- function(df) {
   )
 }
 
+# Create a compact summary table for both numeric and categorical columns.
 build_summary_table <- function(df) {
   if (ncol(df) == 0) {
     return(data.frame())
@@ -499,6 +537,7 @@ build_summary_table <- function(df) {
   do.call(rbind, rows)
 }
 
+# Show only the first n rows so the preview stays responsive even for larger files.
 preview_datatable <- function(df, n = 12) {
   DT::datatable(
     utils::head(df, n),
@@ -511,6 +550,14 @@ preview_datatable <- function(df, n = 12) {
   )
 }
 
+# Small wrapper to avoid rewriting the same renderDT() pattern many times.
+render_preview_table <- function(data_fn, n = 12) {
+  renderDT({
+    preview_datatable(data_fn(), n = n)
+  })
+}
+
+# Used when a plot cannot be generated because the current selections are invalid.
 empty_plotly <- function(message) {
   plotly::plot_ly() |>
     plotly::layout(
@@ -531,16 +578,51 @@ empty_plotly <- function(message) {
     )
 }
 
+# Plotly formulas need this format when the selected column name is dynamic.
 formula_from_col <- function(col_name) {
   as.formula(paste0("~`", col_name, "`"))
 }
 
+# Return the first choice when the current input value is no longer valid.
 first_or_default <- function(x, default = character(0)) {
   if (length(x) == 0) {
     default
   } else {
     x[[1]]
   }
+}
+
+# Keep an existing selection if it still exists after the data changes.
+keep_selected <- function(current, choices, default = first_or_default(choices)) {
+  if (length(choices) == 0) {
+    return(character(0))
+  }
+
+  if (!is.null(current) && length(current) == 1 && current %in% choices) {
+    return(current)
+  }
+
+  default
+}
+
+# Helpers below keep the server code shorter when many select inputs need updating.
+update_select_input_safe <- function(session, input_id, choices, current, default = first_or_default(choices)) {
+  updateSelectInput(
+    session,
+    input_id,
+    choices = choices,
+    selected = keep_selected(current, choices, default)
+  )
+}
+
+update_selectize_input_safe <- function(session, input_id, choices, current) {
+  updateSelectizeInput(
+    session,
+    input_id,
+    choices = choices,
+    selected = intersect(current %||% character(0), choices),
+    server = TRUE
+  )
 }
 
 # ---- 5.User Interface ----
@@ -598,7 +680,7 @@ ui <- navbarPage(
         7,
         div(
           class = "section-card",
-          h3("Why this matches an advanced rubric"),
+          h3("Studio Statement"),
           tags$ul(
             tags$li("Supports CSV, Excel, JSON, and RDS upload."),
             tags$li("Provides built-in datasets for immediate testing."),
@@ -653,11 +735,7 @@ ui <- navbarPage(
         selectInput(
           "builtin_dataset",
           "Built-in dataset",
-          choices = c(
-            "test1 (iris)" = "test1",
-            "test2 (mtcars)" = "test2",
-            "test3 (ToothGrowth)" = "test3"
-          ),
+          choices = stats::setNames(names(builtin_dataset_labels), builtin_dataset_labels),
           selected = "test1"
         ),
         actionButton("load_builtin", "Load Built-in Dataset", class = "btn-primary")
@@ -881,13 +959,7 @@ server <- function(input, output, session) {
   observeEvent(input$load_builtin, {
     df <- load_builtin_dataset(input$builtin_dataset)
     raw_data(df)
-    display_name <- switch(
-      input$builtin_dataset,
-      "test1" = "test1 (iris)",
-      "test2" = "test2 (mtcars)",
-      "test3" = "test3 (ToothGrowth)",
-      input$builtin_dataset
-    )
+    display_name <- builtin_dataset_label(input$builtin_dataset)
     source_name(paste("Built-in dataset:", display_name))
     status_message(paste("Loaded the built-in", display_name, "dataset successfully."))
     feature_recipes(list())
@@ -917,6 +989,7 @@ server <- function(input, output, session) {
 
   # Reactive data pipeline:
   # raw_data -> cleaned_data -> preprocessed_data -> featured_data -> filtered_data
+  # I split the workflow this way so each tab reflects one clear stage of the project.
   cleaned_data <- reactive({
     df <- raw_data()
     req(df)
@@ -959,11 +1032,13 @@ server <- function(input, output, session) {
     df <- featured_data()
     req(df)
 
+    # If the user does not pick a filter, return the full transformed dataset.
     filter_col <- input$filter_col
     if (is.null(filter_col) || identical(filter_col, "None") || !(filter_col %in% names(df))) {
       return(df)
     }
 
+    # Numeric columns use a range slider.
     if (is.numeric(df[[filter_col]])) {
       rng <- input$filter_range
       if (is.null(rng) || length(rng) != 2) {
@@ -973,6 +1048,7 @@ server <- function(input, output, session) {
       return(df[keep, , drop = FALSE])
     }
 
+    # Categorical columns use a multi-select list of levels.
     levels_selected <- input$filter_levels
     if (is.null(levels_selected) || length(levels_selected) == 0) {
       return(df[0, , drop = FALSE])
@@ -983,6 +1059,7 @@ server <- function(input, output, session) {
   })
 
   # Keep preprocessing selectors aligned with the current cleaned dataset.
+  # This prevents users from selecting columns that disappeared after cleaning.
   observe({
     df <- cleaned_data()
     numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
@@ -996,9 +1073,9 @@ server <- function(input, output, session) {
     selected_scale <- intersect(current_scale, numeric_cols)
     selected_encoding <- intersect(current_encoding, categorical_cols)
 
-    updateSelectizeInput(session, "outlier_cols", choices = numeric_cols, selected = selected_outlier, server = TRUE)
-    updateSelectizeInput(session, "scale_cols", choices = numeric_cols, selected = selected_scale, server = TRUE)
-    updateSelectizeInput(session, "encoding_cols", choices = categorical_cols, selected = selected_encoding, server = TRUE)
+    update_selectize_input_safe(session, "outlier_cols", numeric_cols, selected_outlier)
+    update_selectize_input_safe(session, "scale_cols", numeric_cols, selected_scale)
+    update_selectize_input_safe(session, "encoding_cols", categorical_cols, selected_encoding)
   })
 
   # Keep feature-engineering and EDA selectors aligned with the transformed dataset.
@@ -1015,51 +1092,17 @@ server <- function(input, output, session) {
     current_color <- isolate(input$color_var)
     current_filter <- isolate(input$filter_col)
 
-    updateSelectInput(
-      session,
-      "feature_col1",
-      choices = numeric_cols,
-      selected = if (current_feature_col1 %in% numeric_cols) current_feature_col1 else first_or_default(numeric_cols)
-    )
-    updateSelectInput(
-      session,
-      "feature_col2",
-      choices = numeric_cols,
-      selected = if (current_feature_col2 %in% numeric_cols) current_feature_col2 else first_or_default(numeric_cols)
-    )
-    updateSelectInput(
-      session,
-      "feature_focus",
-      choices = numeric_cols,
-      selected = if (current_feature_focus %in% numeric_cols) current_feature_focus else first_or_default(numeric_cols)
-    )
-    updateSelectInput(
-      session,
-      "x_var",
-      choices = cols,
-      selected = if (current_x %in% cols) current_x else first_or_default(cols)
-    )
-    updateSelectInput(
-      session,
-      "y_var",
-      choices = c("None", numeric_cols),
-      selected = if (current_y %in% c("None", numeric_cols)) current_y else "None"
-    )
-    updateSelectInput(
-      session,
-      "color_var",
-      choices = c("None", cols),
-      selected = if (current_color %in% c("None", cols)) current_color else "None"
-    )
-    updateSelectInput(
-      session,
-      "filter_col",
-      choices = c("None", cols),
-      selected = if (current_filter %in% c("None", cols)) current_filter else "None"
-    )
+    update_select_input_safe(session, "feature_col1", numeric_cols, current_feature_col1)
+    update_select_input_safe(session, "feature_col2", numeric_cols, current_feature_col2)
+    update_select_input_safe(session, "feature_focus", numeric_cols, current_feature_focus)
+    update_select_input_safe(session, "x_var", cols, current_x)
+    update_select_input_safe(session, "y_var", c("None", numeric_cols), current_y, default = "None")
+    update_select_input_safe(session, "color_var", c("None", cols), current_color, default = "None")
+    update_select_input_safe(session, "filter_col", c("None", cols), current_filter, default = "None")
   })
 
   # Add a new feature recipe from the sidebar controls.
+  # The recipe is stored first, then applied in the reactive pipeline above.
   observeEvent(input$add_feature, {
     df <- preprocessed_data()
     numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
@@ -1121,9 +1164,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$raw_preview <- renderDT({
-    preview_datatable(raw_data())
-  })
+  output$raw_preview <- render_preview_table(raw_data)
 
   # ---- 7. Cleaning Outputs ----
   output$cleaning_summary <- renderText({
@@ -1144,13 +1185,12 @@ server <- function(input, output, session) {
     )
   })
 
-  output$missing_profile_table <- renderDT({
-    preview_datatable(build_missing_profile(cleaned_data()), n = 20)
-  })
+  output$missing_profile_table <- render_preview_table(
+    function() build_missing_profile(cleaned_data()),
+    n = 20
+  )
 
-  output$cleaned_preview <- renderDT({
-    preview_datatable(cleaned_data())
-  })
+  output$cleaned_preview <- render_preview_table(cleaned_data)
 
   # ---- 8. Preprocessing Outputs ----
   output$preprocessing_summary <- renderText({
@@ -1166,9 +1206,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$processed_preview <- renderDT({
-    preview_datatable(preprocessed_data())
-  })
+  output$processed_preview <- render_preview_table(preprocessed_data)
 
   # ---- 9. Feature Engineering Outputs ----
   output$feature_summary <- renderText({
@@ -1200,10 +1238,9 @@ server <- function(input, output, session) {
     preview_datatable(recipe_df, n = 20)
   })
 
-  output$featured_preview <- renderDT({
-    preview_datatable(featured_data())
-  })
+  output$featured_preview <- render_preview_table(featured_data)
 
+  # A quick histogram lets the user see the distribution of the selected engineered feature.
   output$feature_plot <- renderPlotly({
     df <- featured_data()
     focus <- input$feature_focus
@@ -1217,6 +1254,7 @@ server <- function(input, output, session) {
   })
 
   # ---- 10. EDA Outputs ----
+  # The filter widget changes depending on whether the selected column is numeric or categorical.
   output$filter_ui <- renderUI({
     df <- featured_data()
     filter_col <- input$filter_col
@@ -1261,6 +1299,8 @@ server <- function(input, output, session) {
     }
   })
 
+  # This is the main EDA plot area.
+  # Different plot types are created based on the user's current selections.
   output$eda_plot <- renderPlotly({
     df <- filtered_data()
 
@@ -1348,10 +1388,12 @@ server <- function(input, output, session) {
     layout(p, template = "plotly_white")
   })
 
-  output$summary_stats_table <- renderDT({
-    preview_datatable(build_summary_table(filtered_data()), n = 25)
-  })
+  output$summary_stats_table <- render_preview_table(
+    function() build_summary_table(filtered_data()),
+    n = 25
+  )
 
+  # The correlation heatmap is only meaningful when at least two numeric columns exist.
   output$correlation_heatmap <- renderPlotly({
     df <- filtered_data()
     numeric_df <- df[vapply(df, is.numeric, logical(1))]
@@ -1381,10 +1423,9 @@ server <- function(input, output, session) {
     )
   })
 
-  output$export_preview <- renderDT({
-    preview_datatable(featured_data())
-  })
+  output$export_preview <- render_preview_table(featured_data)
 
+  # Export the final dataset after all selected transformations.
   output$download_processed_data <- downloadHandler(
     filename = function() {
       paste0("processed_data_", Sys.Date(), ".csv")
