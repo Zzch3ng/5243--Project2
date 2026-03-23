@@ -366,52 +366,97 @@ apply_preprocessing <- function(
 }
 
 # Feature Engineering Helpers 
+feature_description <- function(operation, col1, col2 = NULL) {
+  if (identical(operation, "add")) return(paste0(col1, " + ", col2))
+  if (identical(operation, "subtract")) return(paste0(col1, " - ", col2))
+  if (identical(operation, "multiply")) return(paste0(col1, " × ", col2))
+  if (identical(operation, "divide")) return(paste0(col1, " / ", col2))
+  if (identical(operation, "log")) return(paste0("log1p(", col1, ")"))
+  if (identical(operation, "square")) return(paste0(col1, "^2"))
+  operation
+}
+
+apply_single_feature <- function(df, recipe) {
+  if (nrow(df) == 0) {
+    return(df)
+  }
+
+  name <- recipe$name
+  operation <- recipe$operation
+  col1 <- recipe$col1
+  col2 <- recipe$col2
+
+  if (!(col1 %in% names(df))) {
+    return(df)
+  }
+
+  x1 <- suppressWarnings(as.numeric(df[[col1]]))
+
+  if (operation %in% c("add", "subtract", "multiply", "divide")) {
+    if (!(col2 %in% names(df))) {
+      return(df)
+    }
+
+    x2 <- suppressWarnings(as.numeric(df[[col2]]))
+
+    if (identical(operation, "add")) {
+      df[[name]] <- x1 + x2
+    } else if (identical(operation, "subtract")) {
+      df[[name]] <- x1 - x2
+    } else if (identical(operation, "multiply")) {
+      df[[name]] <- x1 * x2
+    } else if (identical(operation, "divide")) {
+      result <- x1 / x2
+      result[x2 == 0] <- NA_real_
+      df[[name]] <- result
+    }
+  } else if (identical(operation, "log")) {
+    result <- rep(NA_real_, length(x1))
+    valid <- !is.na(x1) & x1 > -1
+    result[valid] <- log1p(x1[valid])
+    df[[name]] <- result
+  } else if (identical(operation, "square")) {
+    df[[name]] <- x1^2
+  }
+
+  df
+}
+
 apply_feature_recipes <- function(df, recipes) {
   if (length(recipes) == 0 || nrow(df) == 0) {
     return(df)
   }
 
+  out <- df
   for (recipe in recipes) {
-    name <- recipe$name
-    operation <- recipe$operation
-    col1 <- recipe$col1
-    col2 <- recipe$col2
-
-    if (!(col1 %in% names(df))) {
-      next
-    }
-
-    x1 <- suppressWarnings(as.numeric(df[[col1]]))
-
-    if (operation %in% c("add", "subtract", "multiply", "divide")) {
-      if (!(col2 %in% names(df))) {
-        next
-      }
-
-      x2 <- suppressWarnings(as.numeric(df[[col2]]))
-
-      if (identical(operation, "add")) {
-        df[[name]] <- x1 + x2
-      } else if (identical(operation, "subtract")) {
-        df[[name]] <- x1 - x2
-      } else if (identical(operation, "multiply")) {
-        df[[name]] <- x1 * x2
-      } else if (identical(operation, "divide")) {
-        result <- x1 / x2
-        result[x2 == 0] <- NA_real_
-        df[[name]] <- result
-      }
-    } else if (identical(operation, "log")) {
-      result <- rep(NA_real_, length(x1))
-      valid <- !is.na(x1) & x1 > -1
-      result[valid] <- log1p(x1[valid])
-      df[[name]] <- result
-    } else if (identical(operation, "square")) {
-      df[[name]] <- x1^2
-    }
+    out <- apply_single_feature(out, recipe)
   }
 
-  df
+  out
+}
+
+feature_stats_table <- function(x, label) {
+  if (is.null(x) || all(is.na(x))) {
+    return(data.frame(
+      dataset = label,
+      non_missing = 0,
+      mean = NA,
+      sd = NA,
+      min = NA,
+      median = NA,
+      max = NA
+    ))
+  }
+
+  data.frame(
+    dataset = label,
+    non_missing = sum(!is.na(x)),
+    mean = round(mean(x, na.rm = TRUE), 4),
+    sd = round(stats::sd(x, na.rm = TRUE), 4),
+    min = round(min(x, na.rm = TRUE), 4),
+    median = round(stats::median(x, na.rm = TRUE), 4),
+    max = round(max(x, na.rm = TRUE), 4)
+  )
 }
 
 # Display and Reporting Helpers 
@@ -927,7 +972,7 @@ ui <- navbarPage(
     sidebarLayout(
       sidebarPanel(
         width = 4,
-        div(class = "status-banner", strong("Create derived variables."), br(), "Combine or transform numeric columns to build new features, then inspect them on the right."),
+        div(class = "status-banner", strong("Create derived variables."), br(), "Combine or transform numeric columns to build new features, then compare the original column with the engineered result."),
         div(
           class = "control-group",
           h5("Feature setup"),
@@ -954,15 +999,24 @@ ui <- navbarPage(
         div(
           class = "control-group",
           h5("Inspect a feature"),
-          p(class = "panel-note", "Choose a numeric feature to preview its current distribution."),
+          p(class = "panel-note", "Choose an engineered numeric feature to compare before and after the transformation."),
           selectInput("feature_focus", "Feature to inspect", choices = NULL)
         )
       ),
       mainPanel(
         div(class = "section-card", h4("Feature engineering status"), p(class = "panel-note", "See whether a feature was added successfully and how many rules are currently saved."), verbatimTextOutput("feature_summary")),
-        div(class = "section-card", h4("Feature recipe list"), p(class = "panel-note", "This table records the feature rules you have created so far."), DTOutput("feature_recipe_table")),
+        div(class = "section-card", h4("Feature recipe list"), p(class = "panel-note", "This table records the feature rules you have created so far, including an explanation label for each feature."), DTOutput("feature_recipe_table")),
         div(class = "section-card", h4("Feature preview"), p(class = "panel-note", "Preview the dataset after feature engineering has been applied."), DTOutput("featured_preview")),
-        div(class = "section-card", h4("Feature distribution"), p(class = "panel-note", "Inspect the selected numeric feature to see its current shape."), plotlyOutput("feature_plot", height = "380px"))
+        div(class = "section-card", h4("Before vs After summary"), p(class = "panel-note", "Compare summary statistics for the original input column and the engineered feature."), DTOutput("feature_compare_table")),
+        div(
+          class = "section-card",
+          h4("Before vs After distribution"),
+          p(class = "panel-note", "Use these side-by-side plots to see how the feature transformation changes the distribution."),
+          fluidRow(
+            column(6, plotlyOutput("feature_before_plot", height = "340px")),
+            column(6, plotlyOutput("feature_after_plot", height = "340px"))
+          )
+        )
       )
     )
   ),
@@ -1190,11 +1244,16 @@ server <- function(input, output, session) {
       choices = numeric_cols,
       selected = if (current_feature_col2 %in% numeric_cols) current_feature_col2 else first_or_default(numeric_cols)
     )
+    recipe_feature_names <- intersect(
+      vapply(feature_recipes(), function(x) x$name, character(1)),
+      numeric_cols
+    )
+
     updateSelectInput(
       session,
       "feature_focus",
-      choices = numeric_cols,
-      selected = if (current_feature_focus %in% numeric_cols) current_feature_focus else first_or_default(numeric_cols)
+      choices = recipe_feature_names,
+      selected = if (current_feature_focus %in% recipe_feature_names) current_feature_focus else first_or_default(recipe_feature_names)
     )
     updateSelectInput(
       session,
@@ -1251,21 +1310,66 @@ server <- function(input, output, session) {
     existing_names <- c(names(df), vapply(feature_recipes(), function(x) x$name, character(1)))
     final_name <- make_unique_name(requested_name, existing_names)
 
-    recipes <- feature_recipes()
-    recipes[[length(recipes) + 1]] <- list(
-      name = final_name,
+    recipe_description <- feature_description(
       operation = input$feature_operation,
       col1 = input$feature_col1,
       col2 = input$feature_col2
     )
 
+    recipes <- feature_recipes()
+    recipes[[length(recipes) + 1]] <- list(
+      name = final_name,
+      operation = input$feature_operation,
+      col1 = input$feature_col1,
+      col2 = input$feature_col2,
+      description = recipe_description
+    )
+
     feature_recipes(recipes)
-    feature_message(paste("Added feature", shQuote(final_name), "using the", input$feature_operation, "operation."))
+    feature_message(paste("Added feature", shQuote(final_name), "with label:", recipe_description))
   })
 
   observeEvent(input$reset_features, {
     feature_recipes(list())
     feature_message("All engineered features were removed.")
+  })
+
+  selected_recipe <- reactive({
+    recipes <- feature_recipes()
+    focus <- input$feature_focus
+
+    if (length(recipes) == 0 || is.null(focus) || !nzchar(focus)) {
+      return(NULL)
+    }
+
+    idx <- which(vapply(recipes, function(x) identical(x$name, focus), logical(1)))
+    if (length(idx) == 0) {
+      return(NULL)
+    }
+
+    recipes[[idx[1]]]
+  })
+
+  feature_before_data <- reactive({
+    recipe <- selected_recipe()
+    df <- preprocessed_data()
+
+    if (is.null(recipe) || !(recipe$col1 %in% names(df))) {
+      return(NULL)
+    }
+
+    suppressWarnings(as.numeric(df[[recipe$col1]]))
+  })
+
+  feature_after_data <- reactive({
+    focus <- input$feature_focus
+    df <- featured_data()
+
+    if (is.null(focus) || !(focus %in% names(df)) || !is.numeric(df[[focus]])) {
+      return(NULL)
+    }
+
+    suppressWarnings(as.numeric(df[[focus]]))
   })
 
   # Metric outputs 
@@ -1393,7 +1497,16 @@ server <- function(input, output, session) {
 
     recipe_df <- do.call(
       rbind,
-      lapply(recipes, function(x) as.data.frame(x, stringsAsFactors = FALSE))
+      lapply(recipes, function(x) {
+        data.frame(
+          feature = x$name,
+          operation = x$operation,
+          input_1 = x$col1,
+          input_2 = x$col2 %||% "",
+          explanation_label = x$description %||% feature_description(x$operation, x$col1, x$col2),
+          stringsAsFactors = FALSE
+        )
+      })
     )
 
     preview_datatable(recipe_df, n = 20)
@@ -1403,16 +1516,69 @@ server <- function(input, output, session) {
     preview_datatable(featured_data())
   })
 
-  output$feature_plot <- renderPlotly({
-    df <- featured_data()
-    focus <- input$feature_focus
-
-    if (nrow(df) == 0 || is.null(focus) || !(focus %in% names(df)) || !is.numeric(df[[focus]])) {
-      return(empty_plotly("Create or select a numeric feature to inspect."))
+  output$feature_compare_table <- renderDT({
+    recipe <- selected_recipe()
+    if (is.null(recipe)) {
+      return(
+        DT::datatable(
+          data.frame(message = "Select an engineered numeric feature to compare before vs after."),
+          rownames = FALSE,
+          options = list(dom = "t")
+        )
+      )
     }
 
-    plot_ly(data = df, x = formula_from_col(focus), type = "histogram", nbinsx = 30, marker = list(color = "#1f6f78")) |>
-      layout(template = "plotly_white", bargap = 0.08)
+    before_x <- feature_before_data()
+    after_x <- feature_after_data()
+
+    if (is.null(before_x) || is.null(after_x)) {
+      return(
+        DT::datatable(
+          data.frame(message = "Comparison is available for numeric engineered features."),
+          rownames = FALSE,
+          options = list(dom = "t")
+        )
+      )
+    }
+
+    compare_df <- rbind(
+      feature_stats_table(before_x, paste("Before:", recipe$col1)),
+      feature_stats_table(after_x, paste("After:", recipe$name))
+    )
+
+    preview_datatable(compare_df, n = 10)
+  })
+
+  output$feature_before_plot <- renderPlotly({
+    recipe <- selected_recipe()
+    x <- feature_before_data()
+
+    if (is.null(recipe) || is.null(x)) {
+      return(empty_plotly("Select an engineered numeric feature to view the original distribution."))
+    }
+
+    plot_ly(x = x, type = "histogram", nbinsx = 30, marker = list(color = "#94a3b8")) |>
+      layout(
+        template = "plotly_white",
+        title = paste("Before:", recipe$col1),
+        bargap = 0.08
+      )
+  })
+
+  output$feature_after_plot <- renderPlotly({
+    recipe <- selected_recipe()
+    x <- feature_after_data()
+
+    if (is.null(recipe) || is.null(x)) {
+      return(empty_plotly("Select an engineered numeric feature to view the transformed distribution."))
+    }
+
+    plot_ly(x = x, type = "histogram", nbinsx = 30, marker = list(color = "#1f6f78")) |>
+      layout(
+        template = "plotly_white",
+        title = paste("After:", recipe$name),
+        bargap = 0.08
+      )
   })
 
   # EDA outputs 
