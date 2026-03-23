@@ -116,9 +116,6 @@ In RStudio:
 ## Some notes:
 
 - Current upload limit is set to approximately `300 MB`
-- Very large datasets may still take time to render in previews
-- High-cardinality categorical columns can generate many one-hot encoded columns
-
 For large files, this workflow is recommended:
 
 - Upload first and confirm the preview loads
@@ -142,16 +139,6 @@ Recommended fix:
 2. Restart it
 3. Upload the file again
 4. Keep cleaning and preprocessing settings minimal at first
-
-### Maximum upload size exceeded
-
-Make sure you are running the latest `app.R`. The app now uses:
-
-```r
-options(shiny.maxRequestSize = 300 * 1024^2)
-```
-
-If you changed the file, restart the app completely. Refreshing the browser alone is not enough.
 
 
 
