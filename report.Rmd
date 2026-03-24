@@ -1,6 +1,6 @@
 ---
 title: "Project 2 Report: Interactive Data Wrangling Studio"
-author: "Jason Zhao, Team Member 1, Team Member 2, Team Member3"
+author: "Jason Zhao, Charlene Shen, Xiao Xiao, Yikai Zhou"
 date: "`r Sys.Date()`"
 output:
   html_document:
