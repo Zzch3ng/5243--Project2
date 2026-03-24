@@ -4,17 +4,7 @@ This repository contains an R Shiny application for interactive data upload, cle
 
 ## Project Overview
 
-In the application users can:
-
-- Upload their own data in multiple formats
-- Test the app with built-in sample datasets
-- Clean inconsistent values and missing data
-- Apply preprocessing methods such as scaling, encoding, and outlier handling
-- Create new features interactively
-- Explore the transformed data with interactive plots and summary statistics
-- Download the final processed dataset
-
-There are also some tabular datasets inside a single Shiny interface which user can work with them。
+Users can upload their own datasets or use built-in examples to explore a full data wrangling workflow — from raw data to a cleaned, transformed, and visualized result — entirely within a single Shiny interface.
 
 ## Main Features
 
@@ -23,81 +13,64 @@ There are also some tabular datasets inside a single Shiny interface which user 
 Supported file types:
 
 - `.csv`
-- `.xlsx`
-- `.xls`
+- `.xlsx` / `.xls`
 - `.json`
 - `.rds`
 
-The app also includes built-in datasets for testing（data from the r dataset which include by itself):
+Built-in datasets for immediate testing:
 
-- `test1（iris）`
-- `test2（mtcars）`
-- `test3（ToothGrowth）`
+- `test1` — iris (150 rows, 5 columns, flower measurements with categorical target)
+- `test2` — mtcars (32 rows, 11 columns, car performance metrics)
+- `test3` — ToothGrowth (60 rows, 3 columns, vitamin C dose experiment)
 
 ### 2. Data Cleaning
 
-The Cleaning tab supports:
-
-- Column name standardization
-- Text normalization
+- Column name standardization and text normalization
 - Duplicate handling: `keep`, `flag`, or `remove`
-- Missing value handling: `keep`, `drop_rows`, or impute
-- Numeric imputation: `median`, `mean`, or `zero`
-- Categorical imputation: `mode` or `"Missing"`
+- Missing value strategy: `keep`, `drop_rows`, or `smart_impute`
+  - Numeric imputation: `median`, `mean`, or `zero`
+  - Categorical imputation: `mode` or `"Missing"` label
+- Real-time **before / after comparison table** (Metric | Before | After | Change)
+- **Missing value bar chart** showing per-column missingness percentage
+- Missing value profile table with counts, percentages, and unique value cardinality
 
 ### 3. Preprocessing
 
-The Preprocessing tab supports:
-
-- Outlier handling: `none`, `cap`, or `remove`
+- Outlier handling: `none`, `cap`, or `remove` (IQR-based)
 - Scaling: `none`, `standard`, `minmax`, or `robust`
 - Categorical encoding: `none`, `onehot`, or `label`
-
-For performance reasons, preprocessing is conservative by default. This makes the app more stable for large real-world datasets.
+- Real-time **before / after comparison table** with warning if missing values remain after preprocessing
 
 ### 4. Feature Engineering
 
-Users can create new features interactively using:
+Create new derived columns interactively using:
 
-- `add`
-- `subtract`
-- `multiply`
-- `divide`
-- `log`
-- `square`
+- `add`, `subtract`, `multiply`, `divide`
+- `log` (log1p), `square`, `sqrt`, `abs`
 
-The app stores feature rules and updates the working dataset reactively.
-
-#### Before vs After Comparison
-
-To help users understand the impact of transformations, the app includes:
-
-- Side-by-side distribution plots (before vs after)
-- Summary statistics comparison (mean, sd, min, median, max)
-
-This allows users to directly observe how transformations such as log scaling or normalization affect the data distribution.
+Feature rules are saved and applied reactively. A distribution histogram of the selected feature is shown instantly after creation.
 
 ### 5. EDA and Visualization
 
-The app includes interactive Plotly visualizations and summary outputs:
+Interactive Plotly visualizations with dynamic variable selection, color grouping, and dataset filtering:
 
-- Histogram
-- Box plot
-- Scatter plot
-- Bar chart
-- Summary statistics table
-- Correlation heatmap
-- Dynamic variable selection
-- Optional filtering for exploration
+- **Histogram** — adjustable bin count
+- **Box plot** — with optional group-by variable
+- **Violin plot** — with embedded box and mean line
+- **Scatter plot** — with optional linear trend line
+- **Bar chart** — count or aggregated Y variable
+
+Additional outputs:
+
+- **Statistical insights panel** — N, mean, median, SD, min, max, Q1, Q3, skewness, missing count (numeric); mode and frequency (categorical)
+- **Summary statistics table** — full per-column statistics for the filtered dataset
+- **Correlation heatmap** — annotated with r values, color-coded from −1 to +1
 
 ### 6. Export
 
-Users can download the current transformed dataset as a CSV file from the Export / Download tab.
-
+Download the fully transformed dataset (all cleaning, preprocessing, and feature engineering applied) as a CSV file from the **Export / Download** tab.
 
 ## Required Packages
-
-Install the required R packages before running the app:
 
 ```r
 install.packages(c("shiny", "bslib", "plotly", "DT", "readxl", "jsonlite"))
@@ -106,48 +79,40 @@ install.packages(c("shiny", "bslib", "plotly", "DT", "readxl", "jsonlite"))
 ## How to Run
 
 In RStudio:
+
 1. Open the project folder.
 2. Open `app.R`.
-3. Click `Run App`.
-
+3. Click **Run App**.
 
 ## Workflow
 
-1. Go to the `Load Data` tab.
-2. Upload a file or load a built-in dataset.
-3. Review the raw data preview.
-4. Use the `Cleaning` tab to apply optional cleaning steps.
-5. Use the `Preprocessing` tab to selectively apply encoding, scaling, or outlier handling.
-6. Use `Feature Engineering` to create derived variables.
-7. Use `EDA / Visualization` to explore distributions and correlations.
-8. Download the final dataset from `Export / Download`.
+1. **Load Data** — Upload a file or select a built-in dataset.
+2. **Cleaning** — Standardize text, handle duplicates, and treat missing values.
+3. **Preprocessing** — Apply outlier treatment, scaling, and encoding.
+4. **Feature Engineering** — Build derived variables and inspect their distributions.
+5. **EDA / Visualization** — Explore the data with interactive charts and summary statistics.
+6. **Export / Download** — Download the final processed dataset as CSV.
 
-## Some notes:
+## Notes
 
-- Current upload limit is set to approximately `300 MB`
-For large files, this workflow is recommended:
-
-- Upload first and confirm the preview loads
-- Leave preprocessing options at `none` initially
-- Avoid applying one-hot encoding to identifier columns such as IDs
-- Encode only a small set of categorical columns when needed
+- Upload limit: `300 MB`
+- Very large datasets may take time to render in previews
+- One-hot encoding high-cardinality columns (e.g. ID fields) can produce many columns and slow the app — apply to a small set of meaningful categorical columns only
 
 ## Troubleshooting
 
-### If app does not respond after upload
+**App does not respond after upload**
 
-Common causes:
+- The file may be large; wait a moment for the browser to update
+- Restart the app fully (do not just refresh the browser) and re-upload
+- Start with all preprocessing options set to `none`
 
-- The dataset is very large and the browser needs time to update
-- Too many columns were selected for one-hot encoding
-- The app was not restarted after changing `app.R`
+**Maximum upload size exceeded**
 
-Recommended fix:
+The app sets the limit via:
 
-1. Stop the app completely
-2. Restart it
-3. Upload the file again
-4. Keep cleaning and preprocessing settings minimal at first
+```r
+options(shiny.maxRequestSize = 300 * 1024^2)
+```
 
-
-
+A full app restart (not a browser refresh) is required after any change to `app.R`.
