@@ -8,6 +8,7 @@ output:
     number_sections: false
 ---
 
+
 ## 1. Project Overview
 
 In modern data science, the ability to transition from raw data to actionable insights requires robust preprocessing and exploratory tools. This application bridges that gap using the **R Shiny** framework, offering a scalable and user-friendly environment for dynamic data manipulation. It is designed to support operations such as data uploading, cleaning, preprocessing, feature engineering, exploratory data analysis, and data export.
@@ -75,11 +76,13 @@ Recommended workflow:
 5.  **Explore**: Configure plots and filters in the **ED** tab to find patterns.
 6.  **Export**: Download your final, processed dataset as a **CSV** in the **Export** tab.
 
-## 5. Deployment and Contributions
+## 5. Deployment and Github link
 
 -   **Deployment**: The application was deployed online using shinyapps.io.
 
 -   **Source Code**: Deployed application link: <https://5243project.shinyapps.io/project2-data-wrangling/>
+
+-   **Github**:  <>
 
 Team Member Contributions:
 
