@@ -10,7 +10,7 @@ output:
 
 ## 1. Project Overview
 
-In modern data science, the ability to transition from raw data to actionable insights requires robust preprocessing and exploratory tools. This application bridges that gap using the **R Shiny** framework, offering a scalable and user-friendly environment for dynamic data manipulation. It is designed to support operations such as data uploading, cleaning, preprocessing, feature engineering, exploratory data analysis, and data export. This application targets all **Advanced** criteria set forth in the project rubrics, ensuring a professional-grade experience for stakeholders.
+In modern data science, the ability to transition from raw data to actionable insights requires robust preprocessing and exploratory tools. This application bridges that gap using the **R Shiny** framework, offering a scalable and user-friendly environment for dynamic data manipulation. It is designed to support operations such as data uploading, cleaning, preprocessing, feature engineering, exploratory data analysis, and data export.
 
 ## 2. Core App Functionalities
 
@@ -94,6 +94,3 @@ Team Member Contributions:
 
 In summary, this project produced a complete Shiny application for interactive data wrangling and exploration. The app integrates data upload, cleaning, preprocessing, feature engineering, visualization, and export in a single workflow. Its deployment on shinyapps.io also makes it easy to demonstrate and evaluate as a web-based data application.
 
-## Conclusion
-
-In summary, this project produced a complete Shiny application for interactive data wrangling and exploration. The app integrates data upload, cleaning, preprocessing, feature engineering, visualization, and export in a single workflow. Its deployment on shinyapps.io also makes it easy to demonstrate and evaluate as a web-based data application.
