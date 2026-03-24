@@ -673,20 +673,9 @@ ui <- navbarPage(
             choices = c("keep","remove","flag"), selected = "keep")
         ),
         div(class = "control-group",
-          h5("Missing values"),
-          p(class = "panel-note", "Impute, drop, or keep rows with missing values."),
-          selectInput("missing_strategy", "Strategy",
-            choices = c(
-              "Keep as-is"       = "keep",
-              "Drop rows"        = "drop_rows",
-              "Impute (smart)"   = "smart_impute"
-            ), selected = "keep"),
-          conditionalPanel("input.missing_strategy === 'smart_impute'",
-            selectInput("numeric_impute", "Numeric fill",
-              choices = c("median","mean","zero"), selected = "median"),
-            selectInput("categorical_impute", "Categorical fill",
-              choices = c("mode","missing_label"), selected = "mode")
-          )
+            h5("Missing values"),
+            p(class = "panel-note", "Set strategy per column. Only columns with missing values appear."),
+            uiOutput("per_col_missing_ui")
         )
       ),
       mainPanel(
@@ -802,7 +791,7 @@ ui <- navbarPage(
         div(class = "section-card",
           h4("Feature rules"),
           p(class = "panel-note", "All saved feature transformation recipes."),
-          DTOutput("feature_recipe_table")
+          uiOutput("feature_recipe_table")
         ),
         div(class = "section-card",
           h4("Feature distribution"),
@@ -945,11 +934,25 @@ server <- function(input, output, session) {
   # Reactive data pipeline 
   cleaned_data <- reactive({
     df <- raw_data(); req(df)
-    apply_cleaning(df, standardize_text = input$standardize_text,
-      duplicate_action = input$duplicate_action, missing_strategy = input$missing_strategy,
-      numeric_strategy = input$numeric_impute %||% "median",
-      categorical_strategy = input$categorical_impute %||% "mode")
+    miss_cols <- names(df)[vapply(df, anyNA, logical(1))]
+    cleaned <- as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
+    if (isTRUE(input$standardize_text)) cleaned <- standardize_strings(cleaned)
+    if (identical(input$duplicate_action, "remove")) cleaned <- unique(cleaned)
+    else if (identical(input$duplicate_action, "flag")) cleaned$duplicate_flag <- duplicated(cleaned)
+    for (col in miss_cols) {
+      strat <- input[[paste0("cmiss_", make.names(col))]] %||% "keep"
+      if (identical(strat, "keep") || !anyNA(cleaned[[col]])) next
+      if (identical(strat, "drop_rows")) { cleaned <- cleaned[!is.na(cleaned[[col]]), , drop=FALSE]; next }
+      if (is.numeric(cleaned[[col]])) {
+        fill <- switch(strat, "mean"=mean(cleaned[[col]],na.rm=TRUE), "zero"=0, stats::median(cleaned[[col]],na.rm=TRUE))
+        cleaned[[col]][is.na(cleaned[[col]])] <- if(is.nan(fill)) 0 else fill
+      } else {
+        cleaned[[col]][is.na(cleaned[[col]])] <- if(identical(strat,"mode")) mode_value(cleaned[[col]]) else "Missing"
+      }
+    }
+    rownames(cleaned) <- NULL; cleaned
   })
+  
 
   preprocessed_data <- reactive({
     df <- cleaned_data(); req(df)
@@ -974,7 +977,7 @@ server <- function(input, output, session) {
       return(df[!is.na(df[[filter_col]]) & df[[filter_col]] >= rng[1] & df[[filter_col]] <= rng[2], , drop = FALSE])
     }
     levels_sel <- input$filter_levels
-    if (is.null(levels_sel) || length(levels_sel) == 0) return(df[0, , drop = FALSE])
+    if (is.null(levels_sel) || length(levels_sel) == 0) return(df)
     df[as.character(df[[filter_col]]) %in% levels_sel, , drop = FALSE]
   })
 
@@ -1011,7 +1014,22 @@ server <- function(input, output, session) {
     updateSelectInput(session, "filter_col", choices = c("None", cols),
       selected = if (cur_f %in% c("None", cols)) cur_f else "None")
   })
-
+  
+  observe({
+    recipes <- feature_recipes()
+    lapply(seq_along(recipes), function(i) {
+      local({
+        idx <- i
+        observeEvent(input[[paste0("del_feat_", idx)]], {
+          r <- feature_recipes()
+          r[[idx]] <- NULL
+          feature_recipes(r)
+          feature_message(paste("Removed feature", shQuote(recipes[[idx]]$name)))
+        }, ignoreInit = TRUE, once = TRUE)
+      })
+    })
+  })
+  
   #Feature engineering events 
   observeEvent(input$add_feature, {
     df <- preprocessed_data()
@@ -1130,7 +1148,24 @@ server <- function(input, output, session) {
   })
 
   output$raw_preview <- renderDT({ preview_datatable(raw_data()) })
-
+  
+  
+  # Per-column missing value UI
+  output$per_col_missing_ui <- renderUI({
+    df <- raw_data(); req(df)
+    miss_cols <- names(df)[vapply(df, anyNA, logical(1))]
+    if (length(miss_cols) == 0)
+      return(p(class = "panel-note", "\u2705 No missing values found."))
+    lapply(miss_cols, function(col) {
+      is_num <- is.numeric(df[[col]])
+      choices <- if (is_num) c("keep","drop_rows","median","mean","zero") else c("keep","drop_rows","mode","missing_label")
+      n <- sum(is.na(df[[col]]))
+      selectInput(paste0("cmiss_", make.names(col)),
+                  label = paste0(col, " (", n, " missing)"),
+                  choices = choices, selected = "keep")
+    })
+  })
+  
   #Cleaning outputs 
   output$cleaning_summary_ui <- renderUI({
     before <- dataset_quick_stats(raw_data())
@@ -1211,13 +1246,24 @@ server <- function(input, output, session) {
     )
   })
 
-  output$feature_recipe_table <- renderDT({
+
+  output$feature_recipe_table <- renderUI({
     recipes <- feature_recipes()
     if (length(recipes) == 0)
-      return(DT::datatable(data.frame(message = "No feature recipes yet."),
-        rownames = FALSE, options = list(dom = "t")))
-    recipe_df <- do.call(rbind, lapply(recipes, function(x) as.data.frame(x, stringsAsFactors = FALSE)))
-    preview_datatable(recipe_df, n = 20)
+      return(p(class = "panel-note", "No feature recipes yet."))
+    tagList(lapply(seq_along(recipes), function(i) {
+      r <- recipes[[i]]
+      div(style = "display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;",
+          div(
+            tags$b(r$name),
+            tags$span(style="color:#64748b;font-size:13px;margin-left:10px;",
+                      paste0(r$operation, "(", r$col1, if (!is.null(r$col2) && r$col2 != "") paste0(", ", r$col2) else "", ")"))
+          ),
+          actionButton(paste0("del_feat_", i), "\u2715",
+                       class = "btn btn-sm btn-danger",
+                       style = "padding:2px 8px;font-size:12px;")
+      )
+    }))
   })
 
   output$featured_preview <- renderDT({ preview_datatable(featured_data()) })
