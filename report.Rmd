@@ -8,51 +8,117 @@ output:
     number_sections: false
 ---
 
-## Project Overview
+1. Project Overview
 
-It is designed to support operations such as data uploading, cleaning, preprocessing, feature engineering, exploratory data analysis, and data export. The objective of this application is to provide a user-friendly workflow that enables users to complete common preliminary data science tasks, thereby avoiding the lengthy preparatory work typically required at the onset of model building and analysis.
+In modern data science, the ability to transition from raw data to actionable insights requires robust preprocessing and exploratory tools. This application bridges that gap using the R Shiny framework, offering a scalable and user-friendly environment for dynamic data manipulation. It is designed to support operations such as data uploading, cleaning, preprocessing, feature engineering, exploratory data analysis, and data export. This application targets all Advanced criteria set forth in the project rubrics, ensuring a professional-grade experience for stakeholders.
 
-## App Functionalities
+2. Core App Functionalities
 
-The application contains several tabs that guide the user through the full workflow. The **Load Data** tab allows users to upload data files in CSV, Excel, JSON, and RDS formats, or choose a built-in dataset for testing. After loading a dataset, it shows a preview and a short summary of the data source.
+2.1. Multi-Format Data Integration
 
-The **Cleaning** tab supports standardizes the data, identifies duplicate records, and handles missing values using various methods—such as retaining missing values, removing rows, or imputing numerical values. Furthermore, the application displays an overview of the missing values to help users fully understand the data quality status before proceeding.
+The app supports a wide range of data inputs to ensure maximum flexibility for users:
 
-The **Preprocessing**  tab provides functionalities for outlier handling, numerical scaling, and categorical encoding. Users can choose to truncate or remove outliers; apply standard scaling, Min-Max scaling, or robust scaling to numerical columns; and perform label encoding or one-hot encoding on categorical variables.
+File Formats: Supports CSV, Excel (.xlsx/.xls), JSON, and RDS files.
 
-The **Feature Engineering**  tab allows users to create new variables, encompassing operations such as addition, subtraction, multiplication, division, logarithms, and square transformations. The application saves these feature processing recipes and instantly displays the impact of these new variables within the dataset preview and feature distribution charts.
+Built-in Datasets: Provides three diverse datasets (iris, mtcars, and ToothGrowth) for immediate testing and demonstration.
 
-The **EDA / Visualization** tab provides visualizations, summary statistics, filtering tools, and correlation heatmaps. Users can freely select chart types, dynamically choose variables, and filter data based on numerical ranges or categorical hierarchies.
+2.2. Interactive Cleaning & Preprocessing
 
-Finally, the **Export / Download** tab allows users to download the transformed dataset as a CSV file.
+To handle "messy" real-world data, the app implements a reactive cleaning pipeline:
 
-## How to Use the App
+Text Standardization: Automatically normalizes column names and cleans inconsistent text tokens (e.g., converting "Yes/No/True/1" to a standard format).
+
+Missing Value Management: Offers a "Smart Impute" system allowing users to choose between Mean, Median, or Zero for numeric columns, and Mode or Labels for categorical data.
+
+Outlier & Scaling: Includes IQR-based outlier capping/removal and multiple scaling methods (Standard, Min-Max, and Robust) to prepare data for machine learning.
+
+2.3. Advanced Feature Engineering
+
+Users can generate new analytical insights through an interactive "Recipe" system:
+
+Operations: Supports arithmetic (add, subtract, multiply, divide) and mathematical transformations (log, square root, absolute value).
+
+Real-time Feedback: Includes a distribution preview that updates instantly as new features are added, allowing users to see the statistical impact of their transformations.
+
+2.4. Interactive EDA & Visualization
+
+The Exploratory Data Analysis (EDA) module utilizes Plotly for high-fidelity, interactive visualizations:
+
+Chart Types: Dynamic generation of Histograms, Box plots, Violin plots, Scatter plots (with trend lines), and Bar charts.
+
+Dynamic Insights: A "Statistical Insights" panel displays key metrics like Skewness, Kurtosis, and Quartiles for the selected variable.
+
+Correlation Matrix: A Pearson correlation heatmap with annotated values for identifying variable relationships.
+
+3. User Interface (UI) and Experience (UX)
+
+The application is built with a focus on responsiveness and professional aesthetics:
+
+Guided Workflow: A dedicated User Guide tab provides a step-by-step "Workflow Badge" system to assist first-time users.
+
+Metric Cards: Real-time counters for rows, columns, and missing values provide an immediate "Before vs. After" comparison of data quality.
+
+Responsive Design: Built using bslib and custom CSS to ensure the layout remains functional across various screen sizes
+
+4. How to Use the App
 
 Users first launch the application, where they can choose to utilize a built-in dataset or upload a custom file. Once the data has finished loading, users can proceed sequentially through steps such as data cleaning, preprocessing, and feature engineering. At each stage, the application automatically updates the current dataset, allowing users to monitor the status of the data via the "Preview" panel. Users can visualize the processed data using the "EDA" tab, while the final dataset can be downloaded from the "Export" tab.
 
-The recommended workflow is:
+Recommended workflow: 
 
-1. click "Load Data" section to load/upload a dataset.
-2. click "Cleaning" to apply options for duplicates and missing values.
-3. click "Preprocessing" to select preprocessing methods for outliers, scaling, and encoding.
-4. click " Feature Engineering" to create one or more engineered features.
-5. click "EDA/Visualization" to explore plots, summary statistics, and correlations.
-6. click "Export/Download" to download the final processed dataset in csv.
+Load: Upload a file or select a built-in dataset in the Load Data tab.
 
-## Deployment
+Clean: Navigate to Cleaning to standardize text and handle missing values.
 
-The application was deployed online using shinyapps.io.
+Process: Use Preprocessing to scale numeric features or encode categorical variables.
 
-**Deployed application link:**  
-[https://5243project.shinyapps.io/project2-data-wrangling/](https://5243project.shinyapps.io/project2-data-wrangling/)
+Engineer: Create new variables in Feature Engineering using the operation menu.
 
+Explore: Configure plots and filters in the ED  tab to find patterns.
 
-## Contributions
+Export: Download your final, processed dataset as a CSV in the Export tab.
 
-- **Jason Zhao:** Designed the app structure, implemented the Shiny user interface, and organized the multi-tab workflow.
-- **Charlene Shen:** Redesigned the app’s UI/UX and extended its analytical capabilities by adding advanced visualizations, interpretable feature engineering, and interactive comparison tools, transforming it into a more user-friendly and product-level data application.
-- **Team Member 3:** 
-- **Team Member 4:** 
+5. Deployment and Contributions
+
+Deployment: The application was deployed online using shinyapps.io.
+
+Source Code: Deployed application link: https://5243project.shinyapps.io/project2-data-wrangling/
+
+Team Member Contributions:
+
+Member
+
+Primary Responsibility
+
+Key Deliverables
+
+Janson Zhao
+
+Architect Developer
+
+Design app structure, implemented the Shiny user interface, and organized the multi-tab workflow.
+
+Charlene Shen
+
+Feature & UI Engineer
+
+Extend the app’s UI/UX analytical capabilities by adding advanced visualizations, interpretable feature engineering, and interactive comparison tools, transforming it into a more user-friendly and product-level data application.
+
+Xiao Xiao
+
+Visualization Lead
+
+Testing, Bug Fixing, and Final Logic Audit
+
+Yikai Zhou
+
+Documentation Lead
+
+Template Architecture, Logic Audit, Technical Report
+
+Conclusion
+
+In summary, this project produced a complete Shiny application for interactive data wrangling and exploration. The app integrates data upload, cleaning, preprocessing, feature engineering, visualization, and export in a single workflow. Its deployment on shinyapps.io also makes it easy to demonstrate and evaluate as a web-based data application.
 
 ## Conclusion
 
