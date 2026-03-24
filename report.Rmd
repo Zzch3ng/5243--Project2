@@ -1,6 +1,6 @@
 ---
 title: "Project 2 Report: Interactive Data Wrangling Studio"
-author: "Team Member 1, Team Member 2, Team Member 3"
+author: "Jason Zhao, Team Member 1, Team Member 2, Team Member3"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -50,9 +50,9 @@ The application was deployed online using shinyapps.io.
 ## Contributions
 
 - **Jason Zhao:** Designed the app structure, implemented the Shiny user interface, and organized the multi-tab workflow.
-- **Team Member 2:** Developed the data cleaning, preprocessing, and feature engineering logic.
-- **Team Member 3:** Implemented the EDA visualizations, deployment steps, and project documentation.
-
+- **Team Member 2:** 
+- **Team Member 3:** 
+- **Team Member 4:** 
 
 ## Conclusion
 
