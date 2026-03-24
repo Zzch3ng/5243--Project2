@@ -68,6 +68,15 @@ Users can create new features interactively using:
 
 The app stores feature rules and updates the working dataset reactively.
 
+#### Before vs After Comparison
+
+To help users understand the impact of transformations, the app includes:
+
+- Side-by-side distribution plots (before vs after)
+- Summary statistics comparison (mean, sd, min, median, max)
+
+This allows users to directly observe how transformations such as log scaling or normalization affect the data distribution.
+
 ### 5. EDA and Visualization
 
 The app includes interactive Plotly visualizations and summary outputs:
