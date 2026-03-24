@@ -28,7 +28,7 @@ To handle "messy" real-world data, the app implements a reactive cleaning pipeli
 
 -   **Text Standardization**: Automatically normalizes column names and cleans inconsistent text tokens (e.g., converting "Yes/No/True/1" to a standard format).
 
--   **Missing Value Management**: Offers a "Smart Impute" system allowing users to choose between **Mean, Median, or Zero** for numeric columns, and **Mode or Labels** for categorical data.
+-   **Missing Value Management**: Supports per-column missing value strategies, allowing users to configure each column independently. Numeric columns support keep, drop, median, mean, or zero; categorical columns support keep, drop, mode, or missing label.
 
 -   **Outlier & Scaling**: Includes **IQR-based** outlier capping/removal and multiple scaling methods (**Standard, Min-Max, and Robust**) to prepare data for machine learning.
 
@@ -39,6 +39,8 @@ Users can generate new analytical insights through an interactive "Recipe" syste
 -   **Operations**: Supports arithmetic (add, subtract, multiply, divide) and mathematical transformations (log, square root, absolute value).
 
 -   **Real-time Feedback**: Includes a distribution preview that updates instantly as new features are added, allowing users to see the statistical impact of their transformations.
+
+-   **Rule Management**: Each feature recipe can be individually removed using the delete button, without affecting other rules.
 
 ### 2.4. Interactive EDA & Visualization
 
@@ -83,9 +85,9 @@ Team Member Contributions:
 
 | **Member** | Primary Responsibility | **Key Deliverables** |
 |-------------|-------------------|-----------------------------------------|
-| Janson Zhao | Architect Developer | Design app structure, implemented the Shiny user interface, and organized the multi-tab workflow. |
+| Jason Zhao | Architect Developer | Design app structure, implemented the Shiny user interface, and organized the multi-tab workflow. |
 | Charlene Shen | Feature & UI Engineer | Extend the app’s UI/UX analytical capabilities by adding advanced visualizations, interpretable feature engineering, and interactive comparison tools, transforming it into a more user-friendly and product-level data application. |
-| Xiao Xiao | Visualization Lead | Testing, Bug Fixing, and Final Logic Audit |
+| Xiao Xiao | Feature & QA Engineer | Upgraded missing value handling to per-column strategies, added individual feature rule deletion, improved EDA filter stability for categorical variables. |
 | Yikai Zhou | Documentation Lead | Template Architecture, Logic Audit, Technical Report |
 
 ## Conclusion
