@@ -50,7 +50,7 @@ The application was deployed online using shinyapps.io.
 ## Contributions
 
 - **Jason Zhao:** Designed the app structure, implemented the Shiny user interface, and organized the multi-tab workflow.
-- **Team Member 2:** 
+- **Charlene Shen:** Redesigned the app’s UI/UX and extended its analytical capabilities by adding advanced visualizations, interpretable feature engineering, and interactive comparison tools, transforming it into a more user-friendly and product-level data application.
 - **Team Member 3:** 
 - **Team Member 4:** 
 
