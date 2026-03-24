@@ -27,9 +27,9 @@ Built-in datasets for immediate testing:
 
 - Column name standardization and text normalization
 - Duplicate handling: `keep`, `flag`, or `remove`
-- Missing value strategy: `keep`, `drop_rows`, or `smart_impute`
-  - Numeric imputation: `median`, `mean`, or `zero`
-  - Categorical imputation: `mode` or `"Missing"` label
+- Per-column missing value strategy: each column with missing values can be configured independently
+  - Numeric columns: `keep`, `drop_rows`, `median`, `mean`, or `zero`
+  - Categorical columns: `keep`, `drop_rows`, `mode`, or `missing_label`
 - Real-time **before / after comparison table** (Metric | Before | After | Change)
 - **Missing value bar chart** showing per-column missingness percentage
 - Missing value profile table with counts, percentages, and unique value cardinality
@@ -48,7 +48,7 @@ Create new derived columns interactively using:
 - `add`, `subtract`, `multiply`, `divide`
 - `log` (log1p), `square`, `sqrt`, `abs`
 
-Feature rules are saved and applied reactively. A distribution histogram of the selected feature is shown instantly after creation.
+Feature rules are saved and applied reactively. Each rule can be deleted individually using the ✕ button. A distribution histogram of the selected feature is shown instantly after creation.
 
 ### 5. EDA and Visualization
 
