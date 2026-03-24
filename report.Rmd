@@ -82,13 +82,13 @@ Recommended workflow:
 
 -   **Source Code**: Deployed application link: <https://5243project.shinyapps.io/project2-data-wrangling/>
 
--   **Github**:  <>
+-   **Github**:  <https://github.com/Zzch3ng/5243--Project2>
 
 Team Member Contributions:
 
 | **Member** | Primary Responsibility | **Key Deliverables** |
 |-------------|-------------------|-----------------------------------------|
-| Jason Zhao | Architect Developer | Design app structure, implemented the Shiny user interface, and organized the multi-tab workflow. |
+| Jason Zhao | Architect Developer | Contributed to the app design by structuring the overall application, developing the page logic, implementing the Shiny user interface, and organizing the multi-tab workflow.|
 | Charlene Shen | Feature & UI Engineer | Extend the app’s UI/UX analytical capabilities by adding advanced visualizations, interpretable feature engineering, and interactive comparison tools, transforming it into a more user-friendly and product-level data application. |
 | Xiao Xiao | Feature & QA Engineer | Upgraded missing value handling to per-column strategies, added individual feature rule deletion, improved EDA filter stability for categorical variables. |
 | Yikai Zhou | Documentation Lead | Template Architecture, Logic Audit, Technical Report |
