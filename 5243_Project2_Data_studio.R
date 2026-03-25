@@ -169,7 +169,7 @@ missing_strategy_input_id <- function(position) {
 }
 
 # Build a missing-value summary for columns that currently contain NA values.
-# I use this same summary both for the sidebar controls and for the user's manual "delete this column" decision.
+# use this same summary both for the sidebar controls and for the user's manual "delete this column" decision.
 build_missing_column_info <- function(df) {
   if (ncol(df) == 0) {
     return(
@@ -350,7 +350,6 @@ scale_numeric_columns <- function(df, method, target_columns) {
 }
 
 # Convert selected categorical variables to label-encoded or one-hot encoded columns.
-# One-hot encoding expands the dataset, while label encoding keeps the original number of columns.
 encode_categorical_columns <- function(df, method, target_columns) {
   if (identical(method, "none") || nrow(df) == 0) {
     return(df)
@@ -608,7 +607,7 @@ has_complete_numeric_pair <- function(x, y) {
 }
 
 # A compact stats helper reused in the richer summary cards.
-# I kept this separate from the server metric helper so the UI summaries stay easy to read.
+# kept this separate from the server metric helper so the UI summaries stay easy to read.
 dataset_quick_stats <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
     return(list(rows = 0, cols = 0, numeric = 0, non_numeric = 0, missing = 0, duplicates = 0))
@@ -627,7 +626,7 @@ dataset_quick_stats <- function(df) {
 }
 
 # Small UI helper for the metric cards shown at the top of each tab.
-# use to give users quick feedback about how the dataset changes across the workflow.
+# give users quick feedback about how the dataset changes across the workflow.
 metric_card <- function(title, value_output_id, subtitle = NULL, icon_char = NULL) {
   div(
     class = "metric-box",
@@ -639,7 +638,7 @@ metric_card <- function(title, value_output_id, subtitle = NULL, icon_char = NUL
 }
 
 # Small UI helper for the workflow steps in the User Guide tab.
-# I used this helper to keep the User Guide cleaner and more visually consistent.
+# this helper is to keep the User Guide cleaner and more visually consistent.
 workflow_step <- function(number, title, text) {
   div(
     class = "workflow-step",
@@ -652,7 +651,6 @@ workflow_step <- function(number, title, text) {
   )
 }
 
-# This summary table is mainly a visual explanation tool.
 # It shows users how each stage changes the data without making them read raw text lines.
 summary_comparison_ui <- function(before, after, method_tags = NULL) {
   make_delta <- function(b, a, lower_is_better = FALSE) {
@@ -726,7 +724,6 @@ summary_comparison_ui <- function(before, after, method_tags = NULL) {
 }
 
 # Central CSS block for the polished UI version.
-# I am reusing the final visual style here, but keeping the comments and workflow structure from the original app.
 APP_CSS <- "
 body {
   background: #f0f4f8;
@@ -1574,7 +1571,7 @@ server <- function(input, output, session) {
 
   # Reactive data pipeline:
   # raw_data -> cleaned_data -> preprocessed_data -> featured_data -> filtered_data
-  # I separated the workflow this way so each tab corresponds to one stage of data preparation and exploration.
+  # each tab corresponds to one stage of data preparation and exploration.
   cleaning_reference_data <- reactive({
     df <- raw_data()
     req(df)
@@ -1662,8 +1659,8 @@ server <- function(input, output, session) {
     df[keep, , drop = FALSE]
   })
 
-  # Keep preprocessing selectors aligned with the current cleaned dataset.
-  # This avoids offering columns that no longer exist after cleaning or column removal.
+
+  # avoids offering columns that no longer exist after cleaning or column removal.
   observe({
     df <- cleaned_data()
     numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
@@ -1683,7 +1680,6 @@ server <- function(input, output, session) {
   })
 
   # Keep feature-engineering and EDA selectors aligned with the transformed dataset.
-  # This is important because encoding and feature creation can change the available columns.
   observe({
     df <- featured_data()
     cols <- names(df)
@@ -1862,7 +1858,7 @@ server <- function(input, output, session) {
   output$metric_missing_export <- renderText(format(stats_feat()$missing, big.mark = ","))
 
   # ---- 10. Load Data Outputs ----
-  # The final UI uses a richer summary card instead of plain text, but the content still comes from the same raw dataset state.
+  # The final UI uses a richer summary card
   output$source_summary_ui <- renderUI({
     stats <- dataset_quick_stats(raw_data())
 
