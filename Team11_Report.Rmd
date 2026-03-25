@@ -15,7 +15,7 @@ In modern data science, transforming raw data into a format suitable for actiona
 ## 2. Core App Functionalities
 
 ### 2.1. Multi-Format Data Integration
-The app supports a wide range of data inputs to ensure maximum flexibility for users,which supports **CSV, Excel (.xlsx/.xls), JSON, and RDS** files. and also provides three R datasets (**iris, mtcars, and ToothGrowth**) for immediate testing and demonstration.
+The app supports a wide range of data inputs to ensure maximum flexibility for users,including **CSV, Excel (.xlsx/.xls), JSON, and RDS** files. and also provides three R datasets (**iris, mtcars, and ToothGrowth**) for immediate testing and demonstration.
 
 ### 2.2. Interactive Cleaning & Preprocessing
 **Text Standardization**:automatically normalizes column names and cleans inconsistent text tokens (e.g., converting "Yes/No/True/1" to a standard format).
@@ -27,7 +27,7 @@ The app supports a wide range of data inputs to ensure maximum flexibility for u
 ### 2.3. Advanced Feature Engineering
 **Feature setup**: supports arithmetic (add, subtract, multiply, divide) and mathematical transformations (log, square root, absolute value).
 
-**Actions**: let users can add a feature to save it into the workflow, or reset all engineered features.
+**Actions**: users can add a feature to save it into the workflow, or reset all engineered features.
 
 ### 2.4. Interactive EDA & Visualization
 
@@ -39,7 +39,7 @@ The Exploratory Data Analysis (EDA) module utilizes **Plotly** for high-fidelity
 
 ## 3. User Interface (UI) and Experience (UX)
 
-The application is built with a focus on responsiveness and user-friendliness. **User Guide** tab that provides a step-by-step "studio statement" to assist first-time users.
+The application is built with a focus on responsiveness and user-friendliness. In **User Guide** tab, it provides a step-by-step "studio statement" to assist first-time users.
 
 **Metric Cards**: provide real-time counters for rows, columns, and missing values, offering an immediate comparison of data quality.
 
@@ -55,9 +55,9 @@ The application is built with a focus on responsiveness and user-friendliness. *
 
 ## 5. Deployment and Github link
 
-**Deployed application link:**: <https://5243project.shinyapps.io/project2-data-wrangling/>
+**Deployed application link:** <https://5243project.shinyapps.io/project2-data-wrangling/>
 
-**Github**:  <https://github.com/Zzch3ng/5243--Project2>
+**Github:** <https://github.com/Zzch3ng/5243--Project2>
 
 ## Team Member Contributions
 **Jason Zhao** — *Architect Developer*  
