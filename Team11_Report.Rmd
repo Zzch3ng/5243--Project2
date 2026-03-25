@@ -31,7 +31,7 @@ The app supports a wide range of data inputs to ensure maximum flexibility for u
 
 ### 2.4. Interactive EDA & Visualization
 
-The Exploratory Data Analysis (EDA) module utilizes **Plotly** for high-fidelity, interactive visualizations. **Chart Types** include dynamic generation of Histograms, Box plots, Violin plots, Scatter plots (with trend lines), and Bar charts.
+The Exploratory Data Analysis (EDA) module utilizes **Plotly** for high-fidelity, interactive visualizations. **Plot Type** include dynamic generation of Histograms, Box plots, Scatter plots (with trend lines), and Bar charts.
 
 **Statistical Insights** provides key metrics like **Skewness, Kurtosis, and Quartiles** for the selected variable.
 
