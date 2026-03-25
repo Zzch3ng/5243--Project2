@@ -1,4 +1,4 @@
-# Project 2: Interactive Data Wrangling Studio
+# Project 2: Data Wrangling Studio
 
 This repository contains an R Shiny application for interactive data upload, cleaning, preprocessing, feature engineering, exploratory data analysis, and export.
 
