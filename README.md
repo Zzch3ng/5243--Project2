@@ -79,10 +79,8 @@ install.packages(c("shiny", "bslib", "plotly", "DT", "readxl", "jsonlite"))
 ## How to Run
 
 In RStudio:
-
-1. Open the project folder.
-2. Open `app.R`.
-3. Click **Run App**.
+1. Open `5243_Project2_Data_studio.R`.
+2. Click **Run App**.
 
 ## Workflow
 
@@ -115,4 +113,3 @@ The app sets the limit via:
 options(shiny.maxRequestSize = 300 * 1024^2)
 ```
 
-A full app restart (not a browser refresh) is required after any change to `app.R`.
