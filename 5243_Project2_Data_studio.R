@@ -151,7 +151,7 @@ standardize_strings <- function(df) {
 }
 
 # Build the version of the dataset used for all cleaning decisions.
-# If standardization is enabled, the missing-value summary and later cleaning steps should use the standardized names and values.
+# If standardization is enabled, the missing-value summary and later cleaning steps use the standardized names and values.
 prepare_cleaning_reference <- function(df, standardize_text = FALSE) {
   reference_df <- as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
 
@@ -163,7 +163,7 @@ prepare_cleaning_reference <- function(df, standardize_text = FALSE) {
 }
 
 # Input ids for the per-column missing controls are generated from the column order.
-# This keeps the UI and the cleaning pipeline synchronized even when the user toggles standardization.
+# keeps the UI and the cleaning pipeline synchronized even when the user toggles standardization.
 missing_strategy_input_id <- function(position) {
   paste0("cmiss_", position)
 }
@@ -210,7 +210,7 @@ missing_strategy_choices <- function(is_numeric) {
 }
 
 # Apply the column-specific missing-value rules chosen in the sidebar.
-# This version is more flexible than the original global strategy because each column can be treated differently.
+# each column treated differently.
 apply_column_missing_handling <- function(df, missing_info, strategy_lookup) {
   if (nrow(missing_info) == 0) {
     return(df)
@@ -606,8 +606,7 @@ has_complete_numeric_pair <- function(x, y) {
   sum(stats::complete.cases(x, y)) > 0
 }
 
-# A compact stats helper reused in the richer summary cards.
-# kept this separate from the server metric helper so the UI summaries stay easy to read.
+# A compact stats helper reused in the richer summary cards.make UI summaries stay easy to read.
 dataset_quick_stats <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
     return(list(rows = 0, cols = 0, numeric = 0, non_numeric = 0, missing = 0, duplicates = 0))
@@ -1578,8 +1577,8 @@ server <- function(input, output, session) {
     prepare_cleaning_reference(df, input$standardize_text)
   })
 
-  # This reactive summary drives the sidebar missing-value controls.
-  # It lets the user see how much missing data each column has before deciding whether to delete or impute it.
+  # This summary drives the sidebar missing-value controls.
+  # let the user see how much missing data each column has before deciding whether to delete or impute it.
   missing_column_info <- reactive({
     reference_df <- cleaning_reference_data()
     build_missing_column_info(reference_df)
@@ -1895,7 +1894,7 @@ server <- function(input, output, session) {
 
   # ---- 11. Cleaning Outputs ----
   # Build the dynamic missing-value controls shown in the sidebar.
-  # Numeric and categorical columns are separated so the user can pick more sensible strategies for each type.
+  # separate numeric and categorical columns so the user can pick more sensible strategies for each type.
   output$per_col_missing_ui <- renderUI({
     info <- missing_column_info()
 
@@ -2319,7 +2318,7 @@ server <- function(input, output, session) {
     layout(p, template = "plotly_white")
   })
 
-  # The insight panel is to explain one selected variable without forcing the user to read the whole summary table.
+  # The insight panel explain one selected variable without forcing the user to read the whole summary table.
   output$stat_insight_ui <- renderUI({
     df <- filtered_data()
     x_var <- input$x_var
